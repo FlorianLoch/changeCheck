@@ -1,12 +1,17 @@
 package internal
 
 import (
+	"errors"
 	"io"
 	"net/http"
 
 	query "github.com/antchfx/htmlquery"
 	"github.com/google/go-cmp/cmp"
 	"golang.org/x/net/html"
+)
+
+var (
+	ErrNoMatchingNodes = errors.New("no matching nodes found for xpath expression")
 )
 
 func checkPage(url string, xpath string, lastResult []*html.Node) (bool, []*html.Node, error) {
@@ -44,6 +49,10 @@ func parseAndFind(html io.Reader, xpath string) ([]*html.Node, error) {
 	nodes, err := query.QueryAll(doc, xpath)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(nodes) == 0 {
+		return nodes, ErrNoMatchingNodes
 	}
 
 	return nodes, nil

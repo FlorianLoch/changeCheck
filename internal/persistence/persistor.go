@@ -6,5 +6,4 @@ type Persistor interface {
 }
 
 type FSPersistor struct {
-	
 }

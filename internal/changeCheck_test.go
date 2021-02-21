@@ -13,7 +13,7 @@ const (
 	sampleXPath = "//h1"
 )
 
-func TestCheckingPageForChanges(t *testing.T) {
+func TestCheckPageForChanges(t *testing.T) {
 	assert := assert.New(t)
 
 	nodesA, err := parseAndFind(strings.NewReader(dummyHTML1), sampleXPath)
@@ -30,4 +30,11 @@ func TestCheckingPageForChanges(t *testing.T) {
 
 	changeDetected = !compareNodes(nodesA, nodesC)
 	assert.False(changeDetected)
+}
+
+func TestNoMatchingNodes(t *testing.T) {
+	assert := assert.New(t)
+
+	_, err := parseAndFind(strings.NewReader(dummyHTML1), "h3")
+	assert.Error(err, ErrNoMatchingNodes)
 }
