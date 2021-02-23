@@ -12,10 +12,10 @@ const (
 	configFileName = "changeCheck.config.yaml"
 )
 
-type config struct {
-	Interval         int    // in milliseconds
-	TelegramToken    string `yaml:"telegram_token"` // if set to "ENV" the value will be fetched from environment
-	TelegramReceiver string `yaml:"telegram_receiver"`
+type Config struct {
+	Interval         int    // in seconds
+	TelegramBotToken string `yaml:"telegram_bot_token"` // if set to "ENV" the value will be fetched from environment
+	TelegramChatID   int64  `yaml:"telegram_chat_id"`
 	Pages            []*PageEntry
 }
 
@@ -24,7 +24,17 @@ type PageEntry struct {
 	XPath string
 }
 
-func LoadConfig(fs afero.Fs) ([]byte, error) {
+func LoadConfig() (*Config, error) {
+	fs := afero.NewOsFs()
+	configBytes, err := readConfigFile(fs)
+	if err != nil {
+		return nil, err
+	}
+
+	return parseConfig(configBytes)
+}
+
+func readConfigFile(fs afero.Fs) ([]byte, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return nil, err
@@ -40,8 +50,8 @@ func LoadConfig(fs afero.Fs) ([]byte, error) {
 	return bytes, nil
 }
 
-func ParseConfig(data []byte) (*config, error) {
-	conf := config{}
+func parseConfig(data []byte) (*Config, error) {
+	conf := Config{}
 
 	err := yaml.Unmarshal(data, &conf)
 	if err != nil {

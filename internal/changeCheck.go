@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"bytes"
 	"errors"
 	"io"
 	"net/http"
@@ -14,21 +15,21 @@ var (
 	ErrNoMatchingNodes = errors.New("no matching nodes found for xpath expression")
 )
 
-func checkPage(url string, xpath string, lastResult []*html.Node) (bool, []*html.Node, error) {
+func CheckPage(url string, xpath string, lastResult []*string) (bool, []*string, error) {
 	body, err := fetchHTML(url)
 	if err != nil {
 		return false, nil, err
 	}
 	defer body.Close()
 
-	nodes, err := parseAndFind(body, xpath)
+	renderedNodes, err := parseAndFind(body, xpath)
 	if err != nil {
 		return false, nil, err
 	}
 
-	changeDetected := !compareNodes(lastResult, nodes)
+	changeDetected := !compareNodes(lastResult, renderedNodes)
 
-	return changeDetected, nodes, nil
+	return changeDetected, renderedNodes, nil
 }
 
 func fetchHTML(url string) (io.ReadCloser, error) {
@@ -40,7 +41,7 @@ func fetchHTML(url string) (io.ReadCloser, error) {
 	return res.Body, nil
 }
 
-func parseAndFind(html io.Reader, xpath string) ([]*html.Node, error) {
+func parseAndFind(html io.Reader, xpath string) ([]*string, error) {
 	doc, err := query.Parse(html)
 	if err != nil {
 		return nil, err
@@ -52,12 +53,29 @@ func parseAndFind(html io.Reader, xpath string) ([]*html.Node, error) {
 	}
 
 	if len(nodes) == 0 {
-		return nodes, ErrNoMatchingNodes
+		return nil, ErrNoMatchingNodes
 	}
 
-	return nodes, nil
+	return renderNodes(nodes)
 }
 
-func compareNodes(a, b []*html.Node) bool {
+func renderNodes(nodes []*html.Node) ([]*string, error) {
+	renderedNodes := make([]*string, 0, len(nodes))
+
+	for _, node := range nodes {
+		var buf bytes.Buffer
+		err := html.Render(&buf, node)
+		if err != nil {
+			return nil, err
+		}
+
+		str := buf.String()
+		renderedNodes = append(renderedNodes, &str)
+	}
+
+	return renderedNodes, nil
+}
+
+func compareNodes(a, b []*string) bool {
 	return cmp.Equal(a, b)
 }

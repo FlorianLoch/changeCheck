@@ -12,8 +12,8 @@ import (
 const (
 	dummyConfigStr = `
 interval: 1000
-telegram_token: some secret token
-telegram_receiver: me
+telegram_bot_token: some secret token
+telegram_chat_id: 12345
 pages:
   - url: example.com/index.html
     xpath: //h1
@@ -21,10 +21,10 @@ pages:
 )
 
 var (
-	dummyConfig = &config{
+	dummyConfig = &Config{
 		Interval:         1000,
-		TelegramToken:    "some secret token",
-		TelegramReceiver: "me",
+		TelegramBotToken: "some secret token",
+		TelegramChatID:   12345,
 		Pages: []*PageEntry{{
 			URL:   "example.com/index.html",
 			XPath: "//h1",
@@ -32,15 +32,15 @@ var (
 	}
 )
 
-func TestParseConfig(t *testing.T) {
+func TestLoadConfig(t *testing.T) {
 	assert := assert.New(t)
 
-	config, err := ParseConfig([]byte(dummyConfigStr))
+	config, err := parseConfig([]byte(dummyConfigStr))
 	assert.NoError(err)
 	assert.Equal(dummyConfig, config)
 }
 
-func TestLoadConfig(t *testing.T) {
+func TestReadConfigFile(t *testing.T) {
 	assert := assert.New(t)
 
 	memFS := afero.NewMemMapFs()
@@ -53,7 +53,7 @@ func TestLoadConfig(t *testing.T) {
 	err = afero.WriteFile(memFS, configFile, []byte(dummyConfigStr), 0644)
 	assert.NoError(err)
 
-	configBytes, err := LoadConfig(memFS)
+	configBytes, err := readConfigFile(memFS)
 	assert.NoError(err)
 	assert.Equal(dummyConfigStr, string(configBytes))
 }

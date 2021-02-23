@@ -3,17 +3,17 @@ package persistence
 import (
 	"crypto/sha256"
 	"encoding/gob"
+	"errors"
 	"fmt"
 	"os"
 	"path"
 
 	"github.com/spf13/afero"
-	"golang.org/x/net/html"
 )
 
 type Persistor interface {
-	Store(url string, xpath string, nodes []*html.Node) error
-	Load(url string, xpath string) ([]*html.Node, error)
+	Store(url string, xpath string, nodes []*string) error
+	Load(url string, xpath string) ([]*string, error)
 }
 
 const (
@@ -30,8 +30,8 @@ func NewFSPersistor(fs afero.Fs) *FSPersistor {
 	}
 }
 
-func (f *FSPersistor) Store(url string, xpath string, nodes []*html.Node) error {
-	if len(nodes) == 0 {
+func (f *FSPersistor) Store(url string, xpath string, renderedNodes []*string) error {
+	if len(renderedNodes) == 0 {
 		return nil
 	}
 
@@ -40,20 +40,20 @@ func (f *FSPersistor) Store(url string, xpath string, nodes []*html.Node) error 
 		return err
 	}
 
-	err = f.fs.MkdirAll(cacheDir, 755)
+	err = f.fs.MkdirAll(cacheDir, 0755)
 	if err != nil {
 		return err
 	}
 
 	// Create file, if it exists overwrite its content
-	file, err := f.fs.OpenFile(fileName, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 644)
+	file, err := f.fs.OpenFile(fileName, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
 	encoder := gob.NewEncoder(file)
-	err = encoder.Encode(nodes)
+	err = encoder.Encode(renderedNodes)
 	if err != nil {
 		return err
 	}
@@ -61,7 +61,7 @@ func (f *FSPersistor) Store(url string, xpath string, nodes []*html.Node) error 
 	return file.Close()
 }
 
-func (f *FSPersistor) Load(url string, xpath string) ([]*html.Node, error) {
+func (f *FSPersistor) Load(url string, xpath string) ([]*string, error) {
 	_, fileName, err := paths(url, xpath)
 	if err != nil {
 		return nil, err
@@ -69,21 +69,21 @@ func (f *FSPersistor) Load(url string, xpath string) ([]*html.Node, error) {
 
 	file, err := f.fs.Open(fileName)
 	if err != nil {
-		if err == afero.ErrFileNotFound {
-			return make([]*html.Node, 0), nil
+		if errors.Is(err, afero.ErrFileNotFound) {
+			return nil, nil
 		}
 
 		return nil, err
 	}
 
-	var nodes []*html.Node
+	var renderedNodes []*string
 	decoder := gob.NewDecoder(file)
-	err = decoder.Decode(&nodes)
+	err = decoder.Decode(&renderedNodes)
 	if err != nil {
 		return nil, err
 	}
 
-	return nodes, nil
+	return renderedNodes, nil
 }
 
 func paths(url, xpath string) (string, string, error) {

@@ -1,6 +1,6 @@
 default: build
 
-.PHONY: build test
+.PHONY: build test run
 
 changeCheck_bin = ./changeCheck
 all_go_files = $(shell find . -type f -name '*.go')
@@ -13,6 +13,9 @@ ifeq (, $(shell which richgo))
 else
 	richgo test ./...
 endif
+
+run: $(changeCheck_bin)
+	$(changeCheck_bin)
 
 $(changeCheck_bin): $(all_go_files)
 	go build -o $(changeCheck_bin) .
