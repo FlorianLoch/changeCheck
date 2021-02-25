@@ -19,7 +19,7 @@ func main() {
 
 	config, err := persistence.LoadConfig()
 	if err != nil {
-		log.Fatal().Err(err).Msg("Failed loading config.")
+		log.Fatal().Err(err).Msgf("Failed loading config. Make sure '%s' exists.", persistence.ConfigFileName)
 	}
 
 	log.Info().Msgf("Going to monitor %d page(s).", len(config.Pages))

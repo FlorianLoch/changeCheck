@@ -7,27 +7,33 @@ import (
 )
 
 type Nofifier interface {
-	Notify(url string) error
+	Notify(url, xpath string, debounce bool) error
 }
 
 type TelegramNotifier struct {
-	bot    *tgbotapi.BotAPI
-	chatID int64
+	bot       *tgbotapi.BotAPI
+	chatID    int64
+	debouncer Debouncer
 }
 
-func NewTelegramNotifier(botToken string, chatID int64) (*TelegramNotifier, error) {
+func NewTelegramNotifier(botToken string, chatID int64, debouncer Debouncer) (*TelegramNotifier, error) {
 	bot, err := tgbotapi.NewBotAPI(botToken)
 	if err != nil {
 		return nil, err
 	}
 
 	return &TelegramNotifier{
-		bot:    bot,
-		chatID: chatID,
+		bot:       bot,
+		chatID:    chatID,
+		debouncer: debouncer,
 	}, nil
 }
 
-func (t *TelegramNotifier) Notify(url string) error {
+func (t *TelegramNotifier) Notify(url, xpath string, debounce bool) error {
+	if debounce && t.debouncer.Debounce(url, xpath) {
+		return nil
+	}
+
 	msg := tgbotapi.NewMessage(t.chatID, fmt.Sprintf("'%s' has changed.", url))
 
 	_, err := t.bot.Send(msg)

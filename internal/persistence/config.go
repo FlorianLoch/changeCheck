@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	configFileName = "changeCheck.config.yaml"
+	ConfigFileName = "changeCheck.config.yaml"
 )
 
 type Config struct {
@@ -40,7 +40,7 @@ func readConfigFile(fs afero.Fs) ([]byte, error) {
 		return nil, err
 	}
 
-	configFilePath := path.Join(cwd, configFileName)
+	configFilePath := path.Join(cwd, ConfigFileName)
 
 	bytes, err := afero.ReadFile(fs, configFilePath)
 	if err != nil {

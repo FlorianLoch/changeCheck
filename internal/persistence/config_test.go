@@ -48,7 +48,7 @@ func TestReadConfigFile(t *testing.T) {
 	cwd, err := os.Getwd()
 	assert.NoError(err)
 
-	configFile := path.Join(cwd, configFileName)
+	configFile := path.Join(cwd, ConfigFileName)
 	memFS.MkdirAll(cwd, 0755)
 	err = afero.WriteFile(memFS, configFile, []byte(dummyConfigStr), 0644)
 	assert.NoError(err)
