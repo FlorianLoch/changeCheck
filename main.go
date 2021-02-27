@@ -13,6 +13,10 @@ import (
 	"github.com/florianloch/change-check/internal/persistence"
 )
 
+const (
+	envAppBaseURL = "CC_APP_BASE_URL"
+)
+
 func main() {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout})
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
@@ -26,7 +30,23 @@ func main() {
 
 	p := persistence.NewFSPersistor(afero.NewOsFs())
 
-	n, err := notification.NewTelegramNotifier(config.TelegramBotToken, config.TelegramChatID)
+	appBaseURL := os.Getenv(envAppBaseURL)
+
+	var d notification.Debouncer
+	if appBaseURL != "" {
+		d, err = notification.NewWebDebouncer(appBaseURL)
+		if err != nil {
+			log.Fatal().Err(err).Str("appBaseURL", appBaseURL).Msg("Could not initiliazie WebDebouncer.")
+		}
+
+		log.Info().Msgf("Using WebDebouncer. Reachable at '%s'.", appBaseURL)
+	} else {
+		d = &notification.DummyDebouncer{}
+
+		log.Info().Msgf("Using DummyDebouncer. Set '%s' in order to use the WebDebouncer.", envAppBaseURL)
+	}
+
+	n, err := notification.NewTelegramNotifier(config.TelegramBotToken, config.TelegramChatID, d)
 	if err != nil {
 		log.Fatal().Err(err).Str("botToken", config.TelegramBotToken).Msg("Could not initialize Telegram client.")
 	}
@@ -40,16 +60,16 @@ func monitor(config *persistence.Config, p persistence.Persistor, n notification
 			changed, err := checkPage(page, p)
 
 			if err != nil {
-				log.Error().Err(err).Str("url", page.URL).Str("xpath", page.XPath).Msg("Failed to check page.")
+				log.Error().Err(err).Stringer("url", page.URL).Str("xpath", page.XPath).Msg("Failed to check page.")
 				continue
 			}
 
 			if changed {
 				log.Info().Str("xpath", page.XPath).Msgf("'%s' changed.\n", page.URL)
 
-				err = n.Notify(page.URL)
+				err = n.Notify(page.URL, page.Debounce)
 				if err != nil {
-					log.Error().Err(err).Str("url", page.URL).Str("xpath", page.XPath).Msg("Failed to notify.")
+					log.Error().Err(err).Stringer("url", page.URL).Str("xpath", page.XPath).Msg("Failed to notify.")
 				}
 			} else {
 				log.Info().Str("xpath", page.XPath).Msgf("'%s' NOT changed.\n", page.URL)

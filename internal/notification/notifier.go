@@ -2,12 +2,13 @@ package notification
 
 import (
 	"fmt"
+	u "net/url"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
 type Nofifier interface {
-	Notify(url, xpath string, debounce bool) error
+	Notify(url *u.URL, debounce bool) error
 }
 
 type TelegramNotifier struct {
@@ -29,12 +30,13 @@ func NewTelegramNotifier(botToken string, chatID int64, debouncer Debouncer) (*T
 	}, nil
 }
 
-func (t *TelegramNotifier) Notify(url, xpath string, debounce bool) error {
-	if debounce && t.debouncer.Debounce(url, xpath) {
+func (t *TelegramNotifier) Notify(url *u.URL, shallDebounce bool) error {
+	shallNotify, relayURL := t.debouncer.ShallNotify(url)
+	if shallDebounce && shallNotify {
 		return nil
 	}
 
-	msg := tgbotapi.NewMessage(t.chatID, fmt.Sprintf("'%s' has changed.", url))
+	msg := tgbotapi.NewMessage(t.chatID, fmt.Sprintf("'%s' has changed: %s", url, relayURL))
 
 	_, err := t.bot.Send(msg)
 

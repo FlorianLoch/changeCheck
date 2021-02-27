@@ -5,6 +5,7 @@ import (
 	"encoding/gob"
 	"errors"
 	"fmt"
+	u "net/url"
 	"os"
 	"path"
 
@@ -12,8 +13,8 @@ import (
 )
 
 type Persistor interface {
-	Store(url string, xpath string, nodes []*string) error
-	Load(url string, xpath string) ([]*string, error)
+	Store(url *u.URL, xpath string, nodes []*string) error
+	Load(url *u.URL, xpath string) ([]*string, error)
 }
 
 const (
@@ -30,12 +31,12 @@ func NewFSPersistor(fs afero.Fs) *FSPersistor {
 	}
 }
 
-func (f *FSPersistor) Store(url string, xpath string, renderedNodes []*string) error {
+func (f *FSPersistor) Store(url *u.URL, xpath string, renderedNodes []*string) error {
 	if len(renderedNodes) == 0 {
 		return nil
 	}
 
-	cacheDir, fileName, err := paths(url, xpath)
+	cacheDir, fileName, err := paths(url.String(), xpath)
 	if err != nil {
 		return err
 	}
@@ -61,8 +62,8 @@ func (f *FSPersistor) Store(url string, xpath string, renderedNodes []*string) e
 	return file.Close()
 }
 
-func (f *FSPersistor) Load(url string, xpath string) ([]*string, error) {
-	_, fileName, err := paths(url, xpath)
+func (f *FSPersistor) Load(url *u.URL, xpath string) ([]*string, error) {
+	_, fileName, err := paths(url.String(), xpath)
 	if err != nil {
 		return nil, err
 	}

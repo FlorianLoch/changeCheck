@@ -1,52 +1,92 @@
 package notification
 
 import (
-	"crypto/sha256"
-	"fmt"
+	"encoding/base64"
 	"net/http"
+	u "net/url"
 	"strings"
 	"sync"
+
+	"github.com/rs/zerolog/log"
 )
 
 type Debouncer interface {
-	Debounce(url, xpath string) bool
+	ShallNotify(url *u.URL) (bool, string)
+}
+
+type DummyDebouncer struct{}
+
+func (d *DummyDebouncer) ShallNotify(url *u.URL) (bool, string) {
+	return true, ""
 }
 
 type WebDebouncer struct {
-	entries map[string]string
-	lock    sync.Mutex
+	entries    map[string]struct{}
+	lock       sync.Mutex
+	appBaseURL *u.URL
 }
 
-func NewWebDebouncer() *WebDebouncer {
-	return &WebDebouncer{
-		entries: make(map[string]string),
+func NewWebDebouncer(rawAppBaseURL string) (*WebDebouncer, error) {
+	appURL, err := u.Parse(rawAppBaseURL)
+	if err != nil {
+		return nil, err
 	}
+
+	return &WebDebouncer{
+		entries:    make(map[string]struct{}),
+		appBaseURL: appURL,
+	}, nil
 }
 
 func (d *WebDebouncer) StartHTTPServer(interfacePort string) {
-	http.ListenAndServe(interfacePort, http.HandlerFunc(d.handlerFunc))
+	go func() {
+		err := http.ListenAndServe(interfacePort, http.HandlerFunc(d.handlerFunc))
+		if err != nil {
+			log.Fatal().Err(err).Msg("Webserver of WebDebouncer shut down.")
+		}
+	}()
 }
 
 func (d *WebDebouncer) handlerFunc(w http.ResponseWriter, r *http.Request) {
-	hashed := strings.Trim(r.URL.Path, "/")
-
-	d.lock.Lock()
-	defer d.lock.Unlock()
-	url, ok := d.entries[hashed]
-
-	if !ok {
-		http.Error(w, fmt.Sprintf("'%s' is not known.", hashed), http.StatusNotFound)
+	encoded := strings.Trim(r.URL.Path, "/")
+	decoded, err := decode(encoded)
+	if err != nil {
+		http.Error(w, "Value given cannot be decoded as base64.", http.StatusBadRequest)
 		return
 	}
 
-	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+	d.lock.Lock()
+	defer d.lock.Unlock()
+
+	delete(d.entries, decoded)
+
+	http.Redirect(w, r, decoded, http.StatusTemporaryRedirect)
 }
 
-func (d *WebDebouncer) Debounce(url, xpath string) bool {
+func (d *WebDebouncer) ShallNotify(url *u.URL) (bool, string) {
+	stringifiedURL := url.String()
 
+	d.lock.Lock()
+	defer d.lock.Unlock()
+
+	_, ok := d.entries[stringifiedURL]
+	if ok {
+		return false, ""
+	} else {
+		d.entries[stringifiedURL] = struct{}{}
+
+		tmp := *d.appBaseURL
+		tmp.Path = encode(stringifiedURL)
+
+		return true, tmp.String()
+	}
 }
 
-func hash(url, xpath string) string {
-	hashed := sha256.Sum256([]byte(url + ":" + xpath))
-	return fmt.Sprintf("%x", hash)
+func encode(url string) string {
+	return base64.StdEncoding.EncodeToString([]byte(url))
+}
+
+func decode(encodedURL string) (string, error) {
+	decodedBytes, err := base64.StdEncoding.DecodeString(encodedURL)
+	return string(decodedBytes), err
 }

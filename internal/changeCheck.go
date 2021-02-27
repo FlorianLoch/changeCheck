@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	u "net/url"
 
 	query "github.com/antchfx/htmlquery"
 	"github.com/google/go-cmp/cmp"
@@ -15,7 +16,7 @@ var (
 	ErrNoMatchingNodes = errors.New("no matching nodes found for xpath expression")
 )
 
-func CheckPage(url string, xpath string, lastResult []*string) (bool, []*string, error) {
+func CheckPage(url *u.URL, xpath string, lastResult []*string) (bool, []*string, error) {
 	body, err := fetchHTML(url)
 	if err != nil {
 		return false, nil, err
@@ -32,8 +33,8 @@ func CheckPage(url string, xpath string, lastResult []*string) (bool, []*string,
 	return changeDetected, renderedNodes, nil
 }
 
-func fetchHTML(url string) (io.ReadCloser, error) {
-	res, err := http.Get(url)
+func fetchHTML(url *u.URL) (io.ReadCloser, error) {
+	res, err := http.Get(url.String())
 	if err != nil {
 		return nil, err
 	}

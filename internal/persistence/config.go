@@ -1,6 +1,8 @@
 package persistence
 
 import (
+	"errors"
+	u "net/url"
 	"os"
 	"path"
 
@@ -12,6 +14,10 @@ const (
 	ConfigFileName = "changeCheck.config.yaml"
 )
 
+var (
+	ErrInvalidURL = errors.New("URL invalid. Make sure scheme and host are set.")
+)
+
 type Config struct {
 	Interval         int    // in seconds
 	TelegramBotToken string `yaml:"telegram_bot_token"` // if set to "ENV" the value will be fetched from environment
@@ -20,8 +26,10 @@ type Config struct {
 }
 
 type PageEntry struct {
-	URL   string
-	XPath string
+	RawURL   string `yaml:"url"`
+	URL      *u.URL `yaml:"-"`
+	XPath    string
+	Debounce bool
 }
 
 func LoadConfig() (*Config, error) {
@@ -51,12 +59,25 @@ func readConfigFile(fs afero.Fs) ([]byte, error) {
 }
 
 func parseConfig(data []byte) (*Config, error) {
-	conf := Config{}
+	conf := &Config{}
 
-	err := yaml.Unmarshal(data, &conf)
+	err := yaml.Unmarshal(data, conf)
 	if err != nil {
 		return nil, err
 	}
 
-	return &conf, nil
+	for _, pageEntry := range conf.Pages {
+		url, err := u.Parse(pageEntry.RawURL)
+		if err != nil {
+			return nil, err
+		}
+
+		if url.Scheme == "" && url.Host == "" {
+			return nil, ErrInvalidURL
+		}
+
+		pageEntry.URL = url
+	}
+
+	return conf, nil
 }

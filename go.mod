@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	github.com/antchfx/htmlquery v1.2.3
+	github.com/gavv/httpexpect/v2 v2.2.0
 	github.com/go-telegram-bot-api/telegram-bot-api v4.6.4+incompatible
 	github.com/google/go-cmp v0.5.4
 	github.com/rs/zerolog v1.20.0
