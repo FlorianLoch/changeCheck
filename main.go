@@ -14,12 +14,23 @@ import (
 )
 
 const (
-	envAppBaseURL = "CC_APP_BASE_URL"
+	envAppBaseURL = "APP_BASE_URL"
+	envInterface  = "INTERFACE"
+	envPort       = "PORT"
+)
+
+var (
+	// Build flags set by Makefile
+	gitVersion    string
+	gitAuthorDate string
+	buildDate     string
 )
 
 func main() {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout})
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+
+	log.Info().Str("gitCommit", gitVersion).Str("gitDate", gitAuthorDate).Str("builtAt", buildDate).Msg("")
 
 	config, err := persistence.LoadConfig()
 	if err != nil {
@@ -31,19 +42,28 @@ func main() {
 	p := persistence.NewFSPersistor(afero.NewOsFs())
 
 	appBaseURL := os.Getenv(envAppBaseURL)
+	port := os.Getenv(envPort)
+	interfaze := os.Getenv(envInterface)
+	if interfaze == "" {
+		interfaze = "0.0.0.0"
+	}
 
 	var d notification.Debouncer
-	if appBaseURL != "" {
-		d, err = notification.NewWebDebouncer(appBaseURL)
+	if appBaseURL != "" && port != "" {
+		webDebouncer, err := notification.NewWebDebouncer(appBaseURL)
 		if err != nil {
-			log.Fatal().Err(err).Str("appBaseURL", appBaseURL).Msg("Could not initiliazie WebDebouncer.")
+			log.Fatal().Err(err).Str("appBaseURL", appBaseURL).Msg("Could not initiliaze WebDebouncer.")
 		}
 
+		webDebouncer.StartHTTPServer(interfaze + ":" + port)
+
 		log.Info().Msgf("Using WebDebouncer. Reachable at '%s'.", appBaseURL)
+
+		d = webDebouncer
 	} else {
 		d = &notification.DummyDebouncer{}
 
-		log.Info().Msgf("Using DummyDebouncer. Set '%s' in order to use the WebDebouncer.", envAppBaseURL)
+		log.Info().Msgf("Using DummyDebouncer. Set '%s' and '%s' in order to use the WebDebouncer.", envPort, envAppBaseURL)
 	}
 
 	n, err := notification.NewTelegramNotifier(config.TelegramBotToken, config.TelegramChatID, d)
