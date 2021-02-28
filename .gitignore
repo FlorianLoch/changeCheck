@@ -1,3 +1,4 @@
-changeCheck
+.make/
+change-check
 .change_check_cache
-changeCheck.config.yaml
+change-check.config.yaml

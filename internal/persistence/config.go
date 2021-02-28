@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	ConfigFileName = "changeCheck.config.yaml"
+	ConfigFileName = "change-check.config.yaml"
 )
 
 var (
