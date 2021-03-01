@@ -17,7 +17,6 @@ telegram_bot_token: some secret token
 telegram_chat_id: 12345
 pages:
   - url: http://example.com/index.html
-    xpath: //h1
     debounce: yes
 `
 	dummyBadConfigStr = `
@@ -39,7 +38,7 @@ func TestLoadConfig(t *testing.T) {
 		Pages: []*PageEntry{{
 			RawURL:   "http://example.com/index.html",
 			URL:      dummyURL,
-			XPath:    "//h1",
+			XPath:    "/",
 			Debounce: true,
 		}},
 	}

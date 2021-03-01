@@ -35,6 +35,7 @@ func TestCheckPageForChanges(t *testing.T) {
 func TestNoMatchingNodes(t *testing.T) {
 	assert := assert.New(t)
 
-	_, err := parseAndFind(strings.NewReader(dummyHTML1), "h3")
-	assert.Error(err, ErrNoMatchingNodes)
+	nodesA, err := parseAndFind(strings.NewReader(dummyHTML1), "//h5")
+	assert.NoError(err)
+	assert.Empty(nodesA)
 }

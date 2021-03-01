@@ -76,6 +76,10 @@ func parseConfig(data []byte) (*Config, error) {
 			return nil, ErrInvalidURL
 		}
 
+		if pageEntry.XPath == "" {
+			pageEntry.XPath = "/"
+		}
+
 		pageEntry.URL = url
 	}
 

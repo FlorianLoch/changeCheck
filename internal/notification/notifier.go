@@ -31,12 +31,16 @@ func NewTelegramNotifier(botToken string, chatID int64, debouncer Debouncer) (*T
 }
 
 func (t *TelegramNotifier) Notify(url *u.URL, shallDebounce bool) error {
-	shallNotify, relayURL := t.debouncer.ShallNotify(url)
-	if shallDebounce && shallNotify {
-		return nil
+	var msg tgbotapi.MessageConfig
+	if shallDebounce {
+		shallNotify, relayURL := t.debouncer.ShallNotify(url)
+		if !shallNotify {
+			return nil
+		}
+		msg = tgbotapi.NewMessage(t.chatID, fmt.Sprintf("'%s' has changed: %s", url, relayURL))
+	} else {
+		msg = tgbotapi.NewMessage(t.chatID, fmt.Sprintf("'%s' has changed.", url))
 	}
-
-	msg := tgbotapi.NewMessage(t.chatID, fmt.Sprintf("'%s' has changed: %s", url, relayURL))
 
 	_, err := t.bot.Send(msg)
 

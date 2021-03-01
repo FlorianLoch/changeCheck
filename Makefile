@@ -4,7 +4,7 @@ default: build
 
 change-check_bin = ./change-check
 all_go_files = $(shell find . -type f -name '*.go')
-all_files = $(shell find . -path ./.make -prune -false -o -path ./.change_check_cache -prune -false -o -type f -name '*')
+all_files = $(shell find . -path $(change-check_bin) -prune -false -o -path ./.make -prune -false -o -path ./.change_check_cache -prune -false -o -type f -name '*')
 
 git_version = $(shell git log -1 --format=%aI)
 git_author_date = $(shell git describe --always)

@@ -111,6 +111,10 @@ func checkPage(page *persistence.PageEntry, p persistence.Persistor) (bool, erro
 		return false, err
 	}
 
+	if len(newNodes) == 0 {
+		log.Warn().Stringer("url", page.URL).Str("xpath", page.XPath).Msg("No matching nodes found!")
+	}
+
 	if changed {
 		err = p.Store(page.URL, page.XPath, newNodes)
 	}

@@ -32,10 +32,6 @@ func NewFSPersistor(fs afero.Fs) *FSPersistor {
 }
 
 func (f *FSPersistor) Store(url *u.URL, xpath string, renderedNodes []*string) error {
-	if len(renderedNodes) == 0 {
-		return nil
-	}
-
 	cacheDir, fileName, err := paths(url.String(), xpath)
 	if err != nil {
 		return err
@@ -77,7 +73,7 @@ func (f *FSPersistor) Load(url *u.URL, xpath string) ([]*string, error) {
 		return nil, err
 	}
 
-	var renderedNodes []*string
+	renderedNodes := make([]*string, 0)
 	decoder := gob.NewDecoder(file)
 	err = decoder.Decode(&renderedNodes)
 	if err != nil {

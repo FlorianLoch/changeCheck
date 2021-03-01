@@ -34,7 +34,7 @@ func TestFsPersistor(t *testing.T) {
 	assert.NoError(err)
 	assert.Equal(dummyNodes, nodes)
 
-	// Shoudl overwrite the existing file
+	// Should overwrite the existing file
 	dummyNodes = []*string{&node1}
 	err = p.Store(dummyURL, "//h1", dummyNodes)
 	assert.NoError(err)
@@ -42,4 +42,12 @@ func TestFsPersistor(t *testing.T) {
 	nodes, err = p.Load(dummyURL, "//h1")
 	assert.NoError(err)
 	assert.Equal(dummyNodes, nodes)
+
+	// Should be able to handle empty node list
+	err = p.Store(dummyURL, "//h1", make([]*string, 0))
+	assert.NoError(err)
+
+	nodes, err = p.Load(dummyURL, "//h1")
+	assert.NoError(err)
+	assert.Equal(make([]*string, 0), nodes)
 }
