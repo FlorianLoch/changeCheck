@@ -28,13 +28,13 @@ var (
 
 func main() {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout})
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 
 	log.Info().Str("gitCommit", gitVersion).Str("gitDate", gitAuthorDate).Str("builtAt", buildDate).Msg("")
 
 	config, err := persistence.LoadConfig()
 	if err != nil {
-		log.Fatal().Err(err).Msgf("Failed loading config. Make sure '%s' exists.", persistence.ConfigFileName)
+		log.Fatal().Err(err).Msgf("Failed loading config. Make sure '%s' exists and the format is valid.", persistence.ConfigFileName)
 	}
 
 	log.Info().Msgf("Going to monitor %d page(s).", len(config.Pages))
@@ -76,7 +76,37 @@ func main() {
 }
 
 func monitor(config *persistence.Config, p persistence.Persistor, n notification.Nofifier) {
-	for true {
+	changeChan, err := persistence.MonitorConfigFile()
+	if err != nil {
+		log.Error().Err(err).Msg("Could not initialize monitoring of config file. Running without auto-refresh.")
+
+		// Replace with a dummy channel never providing a value
+		changeChan = make(chan interface{})
+	}
+
+	impulseChan := internal.Merge(changeChan, internal.Tick(time.Duration(config.Interval)*time.Second))
+
+	for range impulseChan {
+		// Try to reload configuration
+		reloadedConfig, err := persistence.LoadConfig()
+		if err != nil {
+			log.Error().
+				Err(err).
+				Msgf("Failed loading config. Make sure '%s' still exists and the format is valid. Keeping former configuration.", persistence.ConfigFileName)
+		} else {
+			if config.Interval != reloadedConfig.Interval {
+				log.Warn().
+					Int("oldInterval", config.Interval).
+					Int("newInterval", reloadedConfig.Interval).
+					Msg("Changing the interval requires a restart. Keeping the old one.")
+
+				// In order to keep things tidy
+				reloadedConfig.Interval = config.Interval
+			}
+
+			config = reloadedConfig
+		}
+
 		for _, page := range config.Pages {
 			changed, err := checkPage(page, p)
 
@@ -96,8 +126,6 @@ func monitor(config *persistence.Config, p persistence.Persistor, n notification
 				log.Info().Str("xpath", page.XPath).Msgf("'%s' NOT changed.\n", page.URL)
 			}
 		}
-
-		time.Sleep(time.Duration(config.Interval) * time.Second)
 	}
 }
 

@@ -43,12 +43,10 @@ func LoadConfig() (*Config, error) {
 }
 
 func readConfigFile(fs afero.Fs) ([]byte, error) {
-	cwd, err := os.Getwd()
+	configFilePath, err := configFilePath()
 	if err != nil {
 		return nil, err
 	}
-
-	configFilePath := path.Join(cwd, ConfigFileName)
 
 	bytes, err := afero.ReadFile(fs, configFilePath)
 	if err != nil {
@@ -56,6 +54,15 @@ func readConfigFile(fs afero.Fs) ([]byte, error) {
 	}
 
 	return bytes, nil
+}
+
+func configFilePath() (string, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	return path.Join(cwd, ConfigFileName), nil
 }
 
 func parseConfig(data []byte) (*Config, error) {
