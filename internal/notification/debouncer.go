@@ -7,7 +7,12 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/florianloch/change-check/internal/persistence"
 	"github.com/rs/zerolog/log"
+)
+
+var (
+	ErrInvalidURL = persistence.ErrInvalidURL
 )
 
 type Debouncer interface {
@@ -30,6 +35,9 @@ func NewWebDebouncer(rawAppBaseURL string) (*WebDebouncer, error) {
 	appURL, err := u.Parse(rawAppBaseURL)
 	if err != nil {
 		return nil, err
+	}
+	if appURL.Host == "" && appURL.Scheme == "" {
+		return nil, ErrInvalidURL
 	}
 
 	return &WebDebouncer{

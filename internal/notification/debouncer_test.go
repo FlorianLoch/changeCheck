@@ -48,7 +48,11 @@ func TestDebouncing(t *testing.T) {
 func setup(t *testing.T) (*WebDebouncer, *httpexpect.Expect) {
 	assert := assert.New(t)
 
-	debouncer, err := NewWebDebouncer(appBaseURL)
+	debouncer, err := NewWebDebouncer("/just-a-path-lacking-host-and-scheme")
+	assert.Error(err, ErrInvalidURL)
+	assert.Nil(debouncer)
+
+	debouncer, err = NewWebDebouncer(appBaseURL)
 	assert.NoError(err)
 
 	handler := debouncer.handlerFunc

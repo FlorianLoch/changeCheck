@@ -47,12 +47,13 @@ func main() {
 	if interfaze == "" {
 		interfaze = "0.0.0.0"
 	}
+	log.Info().Str("appBaseURL", appBaseURL).Str("port", port).Str("interface", interfaze).Msg("")
 
 	var d notification.Debouncer
 	if appBaseURL != "" && port != "" {
 		webDebouncer, err := notification.NewWebDebouncer(appBaseURL)
 		if err != nil {
-			log.Fatal().Err(err).Str("appBaseURL", appBaseURL).Msg("Could not initiliaze WebDebouncer.")
+			log.Fatal().Err(err).Str("appBaseURL", appBaseURL).Msg("Could not initialize WebDebouncer.")
 		}
 
 		webDebouncer.StartHTTPServer(interfaze + ":" + port)
