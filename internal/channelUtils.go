@@ -43,3 +43,10 @@ func Tick(interval time.Duration) <-chan interface{} {
 
 	return outChan
 }
+
+func Shotgun() <-chan interface{} {
+	c := make(chan interface{}, 1)
+	c <- nil
+
+	return c
+}

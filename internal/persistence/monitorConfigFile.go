@@ -1,6 +1,8 @@
 package persistence
 
 import (
+	"path"
+
 	"github.com/fsnotify/fsnotify"
 	"github.com/rs/zerolog/log"
 )
@@ -22,7 +24,7 @@ func MonitorConfigFile() (<-chan interface{}, error) {
 		defer close(outChan)
 
 		for v := range inChan {
-			log.Debug().Msg("Change to config file noticed.")
+			log.Debug().Msg("Change to config file detected.")
 
 			outChan <- v
 		}
@@ -34,12 +36,14 @@ func MonitorConfigFile() (<-chan interface{}, error) {
 func monitorFile(file string) (<-chan interface{}, error) {
 	changeChan := make(chan interface{})
 
+	dirName := path.Dir(file)
+
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, err
 	}
 
-	err = watcher.Add(file)
+	err = watcher.Add(dirName)
 	if err != nil {
 		watcher.Close()
 		return nil, err
@@ -59,12 +63,17 @@ func monitorFile(file string) (<-chan interface{}, error) {
 					return
 				}
 
+				if event.Name != file {
+					break
+				}
+
 				if event.Op&fsnotify.Write == fsnotify.Write {
 					changeChan <- nil
 				}
 
-				// TODO: Vim unlinks and recreates the file... this is nasty and does not work yet.
-				// A work around might be watching the directory and then filter by the file's name.
+				if event.Op&fsnotify.Create == fsnotify.Create {
+					changeChan <- nil
+				}
 			case err, ok := <-watcher.Errors:
 				if !ok {
 					log.Error().Err(err).Msg("FileWatcher stopped due to an error.")

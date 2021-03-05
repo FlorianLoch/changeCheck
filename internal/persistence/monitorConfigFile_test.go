@@ -13,14 +13,18 @@ func TestMonitorFile(t *testing.T) {
 	assert := assert.New(t)
 
 	file, err := ioutil.TempFile("", "")
-	assert.NoError(err)
+	if err != nil {
+		assert.FailNow("Could not create temp file", err)
+	}
 	defer func() {
 		file.Close()
 		os.Remove(file.Name())
 	}()
 
 	changeChan, err := monitorFile(file.Name())
-	assert.NoError(err)
+	if err != nil {
+		assert.FailNow("Could not start monitoring file", err)
+	}
 
 	// Peek the channel
 	select {

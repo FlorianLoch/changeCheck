@@ -84,7 +84,7 @@ func monitor(config *persistence.Config, p persistence.Persistor, n notification
 		changeChan = make(chan interface{})
 	}
 
-	impulseChan := internal.Merge(changeChan, internal.Tick(time.Duration(config.Interval)*time.Second))
+	impulseChan := internal.Merge(changeChan, internal.Tick(time.Duration(config.Interval)*time.Second), internal.Shotgun())
 
 	for range impulseChan {
 		// Try to reload configuration
