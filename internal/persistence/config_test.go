@@ -36,6 +36,7 @@ func TestLoadConfig(t *testing.T) {
 		TelegramBotToken: "some secret token",
 		TelegramChatID:   12345,
 		Pages: []*PageEntry{{
+			Name:     "example.com/index.html", // Name gets generated when not given
 			RawURL:   "http://example.com/index.html",
 			URL:      dummyURL,
 			XPath:    "/",

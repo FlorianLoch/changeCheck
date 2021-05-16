@@ -20,12 +20,13 @@ var (
 
 type Config struct {
 	Interval         int    // in seconds
-	TelegramBotToken string `yaml:"telegram_bot_token"` // if set to "ENV" the value will be fetched from environment
+	TelegramBotToken string `yaml:"telegram_bot_token"`
 	TelegramChatID   int64  `yaml:"telegram_chat_id"`
 	Pages            []*PageEntry
 }
 
 type PageEntry struct {
+	Name     string
 	RawURL   string `yaml:"url"`
 	URL      *u.URL `yaml:"-"`
 	XPath    string
@@ -88,6 +89,10 @@ func parseConfig(data []byte) (*Config, error) {
 		}
 
 		pageEntry.URL = url
+
+		if pageEntry.Name == "" {
+			pageEntry.Name = url.Host + url.Path
+		}
 	}
 
 	return conf, nil

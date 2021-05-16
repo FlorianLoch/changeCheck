@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"strings"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -17,6 +18,7 @@ const (
 	envAppBaseURL = "APP_BASE_URL"
 	envInterface  = "INTERFACE"
 	envPort       = "PORT"
+	envENV        = "ENV"
 )
 
 var (
@@ -28,7 +30,12 @@ var (
 
 func main() {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout})
-	zerolog.SetGlobalLevel(zerolog.DebugLevel)
+
+	if strings.EqualFold(os.Getenv(envENV), "dev") {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	} else {
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	}
 
 	log.Info().Str("gitCommit", gitVersion).Str("gitDate", gitAuthorDate).Str("builtAt", buildDate).Msg("")
 
@@ -111,19 +118,19 @@ func monitor(config *persistence.Config, p persistence.Persistor, n notification
 			changed, err := checkPage(page, p)
 
 			if err != nil {
-				log.Error().Err(err).Stringer("url", page.URL).Str("xpath", page.XPath).Msg("Failed to check page.")
+				log.Error().Err(err).Stringer("url", page.URL).Str("xpath", page.XPath).Msgf("'%s': Failed to check page.", page.Name)
 				continue
 			}
 
 			if changed {
-				log.Info().Str("xpath", page.XPath).Msgf("'%s' changed.\n", page.URL)
+				log.Info().Str("xpath", page.XPath).Stringer("url", page.URL).Msgf("'%s' changed.\n", page.Name)
 
 				err = n.Notify(page.URL, page.Debounce)
 				if err != nil {
-					log.Error().Err(err).Stringer("url", page.URL).Str("xpath", page.XPath).Msg("Failed to notify.")
+					log.Error().Err(err).Stringer("url", page.URL).Str("xpath", page.XPath).Msgf("'%s': Failed to notify.", page.Name)
 				}
 			} else {
-				log.Info().Str("xpath", page.XPath).Msgf("'%s' NOT changed.\n", page.URL)
+				log.Debug().Str("xpath", page.XPath).Stringer("url", page.URL).Msgf("'%s' NOT changed.", page.Name)
 			}
 		}
 	}
