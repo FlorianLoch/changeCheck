@@ -2,3 +2,4 @@
 change-check
 .change_check_cache
 change-check.config.yaml
+coverage.out

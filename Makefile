@@ -1,8 +1,9 @@
 default: build
 
-.PHONY: build test run clean docker-build docker-run dokku-deploy
+.PHONY: build test run clean docker-build docker-run dokku-deploy coverage show-coverage
 
 change-check_bin = ./change-check
+cov_profile = ./coverage.out
 all_go_files = $(shell find . -type f -name '*.go')
 all_files = $(shell find . -path $(change-check_bin) -prune -false -o -path ./.make -prune -false -o -path ./.change_check_cache -prune -false -o -type f -name '*')
 
@@ -24,10 +25,22 @@ run: $(change-check_bin)
 
 clean:
 	rm -rf .make
+	rm $(cov_profile) || true
 	rm $(change-check_bin)
 
 $(change-check_bin): $(all_go_files)
 	go build -ldflags "-X main.gitVersion=$(git_version) -X main.gitAuthorDate=$(git_author_date) -X main.buildDate=$(build_date)" -o $(change-check_bin) .
+
+coverage: $(cov_profile)
+
+$(cov_profile): $(all_go_files)
+	# This workaround of grepping together a list of packages which do not solely contain test code seems to
+	# be not necesarry with go 1.15.7 anymore...
+	# https://github.com/golang/go/issues/27333
+	go test ./... -coverpkg=$(shell go list ./... | grep -v test | tr "\n" ",") -coverprofile=$(cov_profile)
+
+show-coverage: $(cov_profile)
+	go tool cover -html=$(cov_profile)
 
 docker-build: .make/docker-build
 

@@ -10,19 +10,11 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
-    - name: Install yarn
-      uses: actions/setup-node@v1
-    - name: Install dependencies and build web app
-      run: make build-web
     - name: Install golang
       uses: actions/setup-go@v2
       with:
         go-version: 1.16.4 # Same version as set in Dockerfile
-
-    # - name: Run linters
-    #   uses: golangci/golangci-lint-action@v2
-
-    - name: Run tests
+    - name: Run tests with coverage
       run: make coverage
     - name: Prepare coverage report
       uses: jandelgado/gcov2lcov-action@v1.0.5
@@ -31,6 +23,8 @@ jobs:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         path-to-lcov: coverage.lcov
+    # - name: Run linters
+    #   uses: golangci/golangci-lint-action@v2
 
   deploy:
     # Only run this in case building and testing succeeded and the event is a push to master
