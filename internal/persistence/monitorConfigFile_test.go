@@ -12,7 +12,12 @@ import (
 func TestMonitorFile(t *testing.T) {
 	assert := assert.New(t)
 
-	file, err := ioutil.TempFile("", "")
+	cwd, err := os.Getwd()
+	if err != nil {
+		assert.FailNow("Could not get current working directory", err)
+	}
+
+	file, err := ioutil.TempFile(cwd, "")
 	if err != nil {
 		assert.FailNow("Could not create temp file", err)
 	}
