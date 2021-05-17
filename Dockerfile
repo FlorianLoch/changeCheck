@@ -1,18 +1,16 @@
 # Version of golang image should be the same as used in Github CI
-FROM golang:1.16-alpine AS gobuilder
-ARG GIT_VERSION
-ARG GIT_AUTHOR_DATE
-ARG BUILD_DATE
-WORKDIR /src/github.com/florianloch/change-check
+# We cannot use the alpine image anymore because we need to invoke `git` to fill the build args
+FROM golang:1.16.4 AS gobuilder
+WORKDIR /build
 # We run the next three lines before copying the workspace in order to avoid having Go download all modules everytime somethings changes
 COPY go.mod .
 COPY go.sum .
 RUN go mod download
 COPY . .
-RUN GOOS=linux GARCH=amd64 CGO_ENABLED=0 go build -ldflags "-X main.gitVersion=$GIT_VERSION -X main.gitAuthorDate=$GIT_AUTHOR_DATE -X main.buildDate=$BUILD_DATE" -o change-check
+RUN GOOS=linux GARCH=amd64 CGO_ENABLED=0 go build -ldflags "-X main.gitVersion=$(git describe --always) -X main.gitAuthorDate=$(git log -1 --format=%aI) -X main.buildDate=$(date +%Y-%m-%dT%H:%M:%S%z)"
 
 FROM alpine
 RUN apk --no-cache add ca-certificates
 WORKDIR /app
-COPY --from=gobuilder /src/github.com/florianloch/change-check/change-check .
+COPY --from=gobuilder /build/change-check .
 CMD ["./change-check"]

@@ -6,8 +6,8 @@ change-check_bin = ./change-check
 all_go_files = $(shell find . -type f -name '*.go')
 all_files = $(shell find . -path $(change-check_bin) -prune -false -o -path ./.make -prune -false -o -path ./.change_check_cache -prune -false -o -type f -name '*')
 
-git_version = $(shell git log -1 --format=%aI)
-git_author_date = $(shell git describe --always)
+git_version = $(shell git describe --always)
+git_author_date = $(shell git log -1 --format=%aI)
 build_date = $(shell date +%Y-%m-%dT%H:%M:%S%z)
 
 build: $(change-check_bin)
@@ -41,8 +41,7 @@ docker-run: .make/docker-build
 
 dokku-deploy: .make/dokku-deploy
 
-.make/dokku-deploy: test .make/docker-build
-	docker tag fdloch/change-check:latest dokku/change-check:latest
-	docker save dokku/change-check:latest | ssh florian@vps.fdlo.ch "docker load"
-	ssh -t florian@vps.fdlo.ch "sudo dokku tags:deploy change-check latest"
+.make/dokku-deploy: test $(all_files)
+	-git remote add dokku dokku@vps.fdlo.ch:change-check
+	git push dokku master
 	touch .make/dokku-deploy
