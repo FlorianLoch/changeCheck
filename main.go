@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"reflect"
 	"strings"
 	"time"
 
@@ -111,12 +112,15 @@ func monitor(config *persistence.Config, p persistence.Persistor, n notification
 				reloadedConfig.Interval = config.Interval
 			}
 
+			if !reflect.DeepEqual(config, reloadedConfig) {
+				log.Info().Msgf("Config changed. Going to monitor %d page(s).", len(reloadedConfig.Pages))
+			}
+
 			config = reloadedConfig
 		}
 
 		for _, page := range config.Pages {
 			changed, err := checkPage(page, p)
-
 			if err != nil {
 				log.Error().Err(err).Stringer("url", page.URL).Str("xpath", page.XPath).Msgf("'%s': Failed to check page.", page.Name)
 				continue
