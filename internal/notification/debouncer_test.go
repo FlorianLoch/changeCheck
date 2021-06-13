@@ -32,13 +32,13 @@ func TestDebouncing(t *testing.T) {
 	url, err := u.Parse(relayURL)
 	assert.NoError(err)
 
-	r := e.GET(url.Path).Expect()
+	r := e.GET(url.Path).WithRedirectPolicy(httpexpect.DontFollowRedirects).Expect()
 	r.Status(http.StatusTemporaryRedirect)
 	r.Header("Location").Equal(dummyURL.String())
 
 	// Should forward to any page, also unknown ones. This is done in order to not invalidate
 	// forwardings after being requested once resp. in order to not have to keep state
-	r = e.GET("/" + encode(dummyURL2.String())).Expect()
+	r = e.GET("/" + encode(dummyURL2.String())).WithRedirectPolicy(httpexpect.DontFollowRedirects).Expect()
 	r.Status(http.StatusTemporaryRedirect)
 	r.Header("Location").Equal(dummyURL2.String())
 

@@ -1,5 +1,7 @@
 .make/
-change-check
-.change_check_cache
-change-check.config.yaml
 coverage.out
+
+change-check
+
+.change_check_cache/
+change-check.config.yaml

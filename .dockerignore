@@ -1,2 +1,3 @@
-.change_check_cache
+.make/
+.change_check_cache/
 change-check
